@@ -11,7 +11,7 @@
 ![Insights](https://img.shields.io/badge/analytics-Espressif%20Insights-purple)
 ![OTA](https://img.shields.io/badge/updates-OTA-lightgrey)
 
-[🌐 Project website](https://cscscs99.github.io/ENV_DATA_LOGGER_CS/) · [📄 Full report](docs/report.html) · [🎬 Demo video](#-demo) · [🚀 Quick start](#-quick-start)
+[🌐 Project website](https://cscscs99.github.io/ENV_DATA_LOGGER_CS/) · [📄 Full report](docs/report.html) · [🎬 Demo video](https://youtu.be/yZ0_tcEBqfw) · [🚀 Quick start](#-quick-start)
 
 </div>
 
@@ -236,7 +236,9 @@ The node uses BLE provisioning with the sec2 scheme and assisted claiming, so no
 
 ## 🎬 Demo
 
-> 🎥 Demo video link: _coming soon_
+> 🎥 **Watch the demo:** [youtu.be/yZ0_tcEBqfw](https://youtu.be/yZ0_tcEBqfw)
+
+[![Demo video](https://img.youtube.com/vi/yZ0_tcEBqfw/hqdefault.jpg)](https://youtu.be/yZ0_tcEBqfw)
 
 ---
 

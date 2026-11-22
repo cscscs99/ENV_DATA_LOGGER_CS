@@ -49,6 +49,8 @@
   .shots figure { margin:12px 0; flex:0 1 320px; }
   .shots img { width:100%; }
   figure.photo img { width:100%; max-width:380px; }
+  .video { position:relative; padding-top:56.25%; margin:12px 0; }
+  .video iframe { position:absolute; inset:0; width:100%; height:100%; border:0; border-radius:6px; }
 
   /* cards */
   .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin:16px 0; }
@@ -336,7 +338,8 @@
 <section class="alt" id="demo"><div class="wrap">
   <h2>Demo</h2>
   <p class="sub">Video walkthrough.</p>
-  <p><span class="todo">Demo video link coming soon.</span></p>
+  <div class="video"><iframe src="https://www.youtube.com/embed/yZ0_tcEBqfw" title="Smart Environmental Data Logger demo" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+  <p>Video link: <a href="https://youtu.be/yZ0_tcEBqfw">youtu.be/yZ0_tcEBqfw</a></p>
   <h3>Suggested demo order</h3>
   <ol>
     <li>Power the board and show it joining Wi-Fi, with the four devices appearing in the app.</li>
