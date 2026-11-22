@@ -244,10 +244,9 @@ The node uses BLE provisioning with the sec2 scheme and assisted claiming, so no
 
 ## ⚠️ Limitations
 
-- 🌡️ The DHT11 is accurate to about 2 °C and 5 % RH, and updates at most once per second.
-- 🌫️ The MQ-135 digital output only says whether gas is above the trimmer setting. It gives no concentration.
+- 🌡️ **DHT11 accuracy and resolution:** the sensor is rated for 0 to 50 °C with about ±2 °C accuracy, and 20 to 90 % RH with about ±5 % accuracy. Readings come in whole degrees and whole percent, so small trends are invisible. The sensor can be sampled at most once per second; the firmware reads it every 2 s and reports a change of 0.5 °C or 2 % at once, otherwise every 30 s. It is also slow to react, so a short temperature spike can pass between readings. A DHT22 or SHT31 would give finer and more accurate values.
+- 🌫️ **MQ-135 is a yes/no sensor:** the digital output only says whether the gas level is above the level set by the trimmer pot, and that level must be tuned by hand in the room being monitored. It gives no concentration (no ppm value) and cannot tell which gas is present, because the sensor responds to ammonia, alcohol, smoke, benzene and CO2 together. It needs about 30 s to warm up after every power-up (the firmware ignores it during that time), and a new sensor should be burned in for 24 to 48 hours first. Readings also drift with temperature and humidity. The analog output is not used, because ESP32 ADC2 pins stop working while Wi-Fi is on.
 - 🗣️ Alexa and Google Assistant need the RainMaker skill linked once in the phone app.
-- 🔊 The buzzer is disabled in firmware by default and needs its transistor wired before enabling.
 
 ---
 

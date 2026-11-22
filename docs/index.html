@@ -69,7 +69,7 @@
   <div class="brand">EnvLogger</div>
   <nav>
     <a href="#home">Home</a><a href="#about">About</a><a href="#design">System design</a><a href="#hardware">Hardware</a>
-    <a href="#software">Software</a><a href="#cloud">Cloud and app</a><a href="#testing">Testing</a>
+    <a href="#software">Software</a><a href="#cloud">Cloud and app</a><a href="#testing">Testing</a><a href="#limitations">Limitations</a>
     <a href="#demo">Demo</a><a href="#code">Source code</a>
   </nav>
 </div></div>
@@ -324,18 +324,21 @@
     <tr><td>Voice</td><td>Ask the linked assistant for the temperature</td><td>Current reading spoken</td></tr>
     <tr><td>OTA</td><td>Upload a new image in the dashboard</td><td>Node updates, reboots, reconnects</td></tr>
   </table>
+</div></section>
 
-  <h3>Limitations</h3>
+<!-- LIMITATIONS -->
+<section class="alt" id="limitations"><div class="wrap">
+  <h2>Limitations</h2>
+  <p class="sub">What the sensors and the design cannot do.</p>
   <ul>
-    <li>The DHT11 is accurate to about 2 C and 5 % RH, and updates at most once per second.</li>
-    <li>The MQ-135 digital output only says whether gas is above the trimmer setting. It gives no concentration.</li>
+    <li><b>DHT11 accuracy and resolution:</b> the sensor is rated for 0 to 50 C with about &plusmn;2 C accuracy, and 20 to 90 % RH with about &plusmn;5 % accuracy. Readings come in whole degrees and whole percent, so small trends are invisible. The sensor can be sampled at most once per second; the firmware reads it every 2 s and reports a change of 0.5 C or 2 % at once, otherwise every 30 s. It is also slow to react, so a short temperature spike can pass between readings. A DHT22 or SHT31 would give finer and more accurate values.</li>
+    <li><b>MQ-135 is a yes/no sensor:</b> the digital output only says whether the gas level is above the level set by the trimmer pot, and that level must be tuned by hand in the room being monitored. It gives no concentration (no ppm value) and cannot tell which gas is present, because the sensor responds to ammonia, alcohol, smoke, benzene and CO2 together. It needs about 30 s to warm up after every power-up (the firmware ignores it during that time), and a new sensor should be burned in for 24 to 48 hours first. Readings also drift with temperature and humidity. The analog output is not used, because ESP32 ADC2 pins stop working while Wi-Fi is on.</li>
     <li>Alexa and Google Assistant need the RainMaker skill linked once in the phone app.</li>
-    <li>The buzzer is disabled by default in firmware and needs its transistor wired before enabling.</li>
   </ul>
 </div></section>
 
 <!-- DEMO -->
-<section class="alt" id="demo"><div class="wrap">
+<section id="demo"><div class="wrap">
   <h2>Demo</h2>
   <p class="sub">Video walkthrough.</p>
   <div class="video"><iframe src="https://www.youtube.com/embed/yZ0_tcEBqfw" title="Smart Environmental Data Logger demo" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
@@ -354,7 +357,7 @@
 </div></section>
 
 <!-- CODE -->
-<section id="code"><div class="wrap">
+<section class="alt" id="code"><div class="wrap">
   <h2>Source code</h2>
   <p class="sub">Build, flash and pair.</p>
   <p>Repository: <a href="https://github.com/cscscs99/ENV_DATA_LOGGER_CS">github.com/cscscs99/ENV_DATA_LOGGER_CS</a></p>
