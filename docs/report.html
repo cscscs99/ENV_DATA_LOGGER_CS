@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Smart Environmental Data Logger - Project Report</title>
+<style>
+  :root { --ink:#1b2430; --muted:#5b6776; --line:#d9dee5; --accent:#0b6bcb; --bg:#f6f8fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.6 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif; color:var(--ink); background:#fff; }
+  header { background:var(--ink); color:#fff; padding:40px 24px; }
+  header h1 { margin:0 0 6px; font-size:28px; }
+  header p { margin:0; color:#c5cdd8; }
+  main, header > div { max-width:960px; margin:0 auto; }
+  main { padding:8px 24px 64px; }
+  h2 { margin:40px 0 12px; padding-bottom:6px; border-bottom:2px solid var(--line); font-size:22px; }
+  h3 { margin:24px 0 8px; font-size:17px; }
+  table { border-collapse:collapse; width:100%; margin:12px 0; font-size:15px; }
+  th, td { border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:var(--bg); }
+  code { background:var(--bg); padding:1px 5px; border-radius:4px; font-size:14px; }
+  pre { background:var(--bg); padding:14px; border-radius:6px; overflow-x:auto; font-size:13px; line-height:1.45; }
+  figure { margin:18px 0; text-align:center; }
+  figcaption { color:var(--muted); font-size:14px; margin-top:6px; }
+  svg, img { max-width:100%; height:auto; border:1px solid var(--line); border-radius:6px; background:#fff; }
+  .note { border-left:4px solid var(--accent); background:var(--bg); padding:10px 14px; margin:14px 0; }
+  nav { background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:12px 18px; margin-top:24px; }
+  nav a { color:var(--accent); text-decoration:none; margin-right:14px; white-space:nowrap; }
+  @media print { header { background:#fff; color:#000; border-bottom:2px solid #000; } header p { color:#444; } }
+</style>
+</head>
+<body>
+<header><div>
+  <h1>Smart Environmental Data Logger</h1>
+  <p>ESP32, FreeRTOS and ESP RainMaker. IoT assignment report.</p>
+</div></header>
+<main>
+
+<nav>
+  <a href="#overview">Overview</a><a href="#blocks">Block diagram</a><a href="#hardware">Hardware</a>
+  <a href="#schematic">Schematic</a><a href="#software">Software</a><a href="#cloud">Cloud</a>
+  <a href="#reliability">Reliability</a><a href="#testing">Testing</a><a href="#limits">Limitations</a>
+</nav>
+
+<h2 id="overview">1. Overview</h2>
+<p>The node measures temperature, humidity and air quality, publishes them to the ESP RainMaker cloud, and raises a
+push notification when a threshold is crossed. It is monitored and controlled from the RainMaker Home app, and it can be
+queried by voice through Alexa or Google Assistant after account linking. Diagnostics go to Espressif Insights, firmware
+updates arrive over the air, and the node reconnects by itself after a power loss.</p>
+<table>
+  <tr><th>Item</th><th>Choice</th></tr>
+  <tr><td>Board</td><td>Classic ESP32 dev board, 30 pins, 4 MB flash</td></tr>
+  <tr><td>Framework</td><td>ESP-IDF v6.1, FreeRTOS</td></tr>
+  <tr><td>Cloud</td><td>ESP RainMaker (Classic), Espressif Insights</td></tr>
+  <tr><td>Provisioning</td><td>BLE, security 2 (username and proof of possession), assisted claiming</td></tr>
+  <tr><td>Sensors</td><td>DHT11 (temperature, humidity), MQ-135 digital output (air quality)</td></tr>
+  <tr><td>Outputs</td><td>Alarm LED, optional buzzer</td></tr>
+</table>
+
+<h2 id="blocks">2. System block diagram</h2>
+<figure>
+<svg viewBox="0 0 900 400" width="900" role="img" aria-label="System block diagram">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0 0L10 5L0 10z" fill="#1b2430"/></marker>
+    <style>
+      .b{fill:#eef4fb;stroke:#0b6bcb;stroke-width:1.5}
+      .s{fill:#f3f8ee;stroke:#3a8a2e;stroke-width:1.5}
+      .c{fill:#fdf5e8;stroke:#c27a05;stroke-width:1.5}
+      .t{font:14px sans-serif;fill:#1b2430;text-anchor:middle}
+      .u{font:12px sans-serif;fill:#5b6776;text-anchor:middle}
+      .l{stroke:#1b2430;stroke-width:1.5;fill:none;marker-end:url(#a)}
+    </style>
+  </defs>
+  <!-- sensors -->
+  <rect class="s" x="20" y="60" width="150" height="60" rx="6"/>
+  <text class="t" x="95" y="86">DHT11</text><text class="u" x="95" y="105">temperature, humidity</text>
+  <rect class="s" x="20" y="150" width="150" height="60" rx="6"/>
+  <text class="t" x="95" y="176">MQ-135</text><text class="u" x="95" y="195">air quality (digital)</text>
+  <rect class="s" x="20" y="240" width="150" height="60" rx="6"/>
+  <text class="t" x="95" y="266">BOOT button</text><text class="u" x="95" y="285">re-handshake, resets</text>
+  <!-- esp32 -->
+  <rect class="b" x="260" y="30" width="260" height="320" rx="8"/>
+  <text class="t" x="390" y="56" style="font-weight:bold">ESP32 (FreeRTOS)</text>
+  <rect x="280" y="72" width="100" height="38" rx="4" fill="#fff" stroke="#0b6bcb"/><text class="t" x="330" y="96">sensor</text>
+  <rect x="400" y="72" width="100" height="38" rx="4" fill="#fff" stroke="#0b6bcb"/><text class="t" x="450" y="96">cloud</text>
+  <rect x="280" y="128" width="100" height="38" rx="4" fill="#fff" stroke="#0b6bcb"/><text class="t" x="330" y="152">alert</text>
+  <rect x="400" y="128" width="100" height="38" rx="4" fill="#fff" stroke="#0b6bcb"/><text class="t" x="450" y="152">control</text>
+  <rect x="280" y="184" width="100" height="38" rx="4" fill="#fff" stroke="#0b6bcb"/><text class="t" x="330" y="208">connect</text>
+  <rect x="400" y="184" width="100" height="38" rx="4" fill="#fff" stroke="#0b6bcb"/><text class="t" x="450" y="208">button</text>
+  <rect x="280" y="240" width="100" height="38" rx="4" fill="#fff" stroke="#0b6bcb"/><text class="t" x="330" y="264">ota</text>
+  <rect x="400" y="240" width="100" height="38" rx="4" fill="#fff" stroke="#0b6bcb"/><text class="t" x="450" y="264">RainMaker agent</text>
+  <text class="u" x="390" y="312">Wi-Fi, BLE, NVS, event group, queues</text>
+  <text class="u" x="390" y="332">esp_timer, GPIO interrupt</text>
+  <!-- outputs -->
+  <rect class="s" x="610" y="60" width="130" height="50" rx="6"/>
+  <text class="t" x="675" y="82">Alarm LED</text><text class="u" x="675" y="100">D19</text>
+  <rect class="s" x="610" y="125" width="130" height="50" rx="6"/>
+  <text class="t" x="675" y="147">Buzzer</text><text class="u" x="675" y="165">D18 (optional)</text>
+  <!-- cloud -->
+  <rect class="c" x="610" y="215" width="130" height="50" rx="6"/>
+  <text class="t" x="675" y="237">Wi-Fi router</text><text class="u" x="675" y="255">2.4 GHz</text>
+  <rect class="c" x="770" y="215" width="115" height="50" rx="6"/>
+  <text class="t" x="827" y="237">RainMaker</text><text class="u" x="827" y="255">cloud, MQTT</text>
+  <rect class="c" x="770" y="290" width="115" height="50" rx="6"/>
+  <text class="t" x="827" y="312">Insights</text><text class="u" x="827" y="330">metrics, logs</text>
+  <rect class="c" x="770" y="140" width="115" height="50" rx="6"/>
+  <text class="t" x="827" y="162">Home app</text><text class="u" x="827" y="180">iPhone, push</text>
+  <rect class="c" x="770" y="65" width="115" height="50" rx="6"/>
+  <text class="t" x="827" y="87">Alexa / Google</text><text class="u" x="827" y="105">voice</text>
+  <!-- arrows -->
+  <path class="l" d="M170 90H260"/>
+  <path class="l" d="M170 180H260"/>
+  <path class="l" d="M170 270H260"/>
+  <path class="l" d="M520 90H610"/>
+  <path class="l" d="M520 150H610"/>
+  <path class="l" d="M520 240H610"/>
+  <path class="l" d="M740 240H770"/>
+  <path class="l" d="M827 215V190"/>
+  <path class="l" d="M827 140V115"/>
+  <path class="l" d="M827 265V290"/>
+</svg>
+<figcaption>Figure 1. Sensors feed the ESP32 tasks, which drive the outputs and talk to the cloud through the router.</figcaption>
+</figure>
+
+<h2 id="hardware">3. Hardware</h2>
+<table>
+  <tr><th>Part</th><th>ESP32 pin</th><th>Wiring</th></tr>
+  <tr><td>DHT11 module</td><td>GPIO4 (D4)</td><td><code>+</code> to 3V3, <code>-</code> to GND, <code>OUT</code> to D4. A bare sensor needs a 10 k pull-up on data.</td></tr>
+  <tr><td>MQ-135 module</td><td>GPIO23 (D23)</td><td>VCC to 3V3, GND to GND, <code>DO</code> to D23. The trimmer pot sets the trip level.</td></tr>
+  <tr><td>Alarm LED</td><td>GPIO19 (D19)</td><td>D19 to 330 ohm to LED anode, cathode to GND.</td></tr>
+  <tr><td>Buzzer (optional)</td><td>GPIO18 (D18)</td><td>D18 to 1 k to NPN base, buzzer between 3V3 and collector, emitter to GND.</td></tr>
+  <tr><td>BOOT button</td><td>GPIO0</td><td>On the board, active low.</td></tr>
+</table>
+<p>All parts sit on the right-hand header row of the dev board. The MQ-135 digital output is used, so no ADC pin is needed
+and the Wi-Fi radio cannot disturb the reading.</p>
+<div class="note">The MQ-135 heater draws a noticeable current. A weak USB cable or port can make the ESP32 brown out when Wi-Fi
+starts. Use a short data cable in a direct port, and add the sensors one at a time.</div>
+
+<h2 id="schematic">4. Wiring schematic</h2>
+<figure>
+<img src="schematic.png" width="900" alt="Wiring schematic: ESP32 pins D4, D23, D19 and D18 wired to the DHT11, MQ-135, LED and optional buzzer driver">
+<figcaption>Figure 2. Wiring. The buzzer path is optional and disabled in firmware by default.</figcaption>
+</figure>
+<p>Check each module's own pin labels: they are not always in the same order, and a swapped data and ground wire on the
+DHT11 shows up in the log as "data line is stuck LOW".</p>
+
+<h2 id="software">5. Software design</h2>
+<p>Each job runs in its own FreeRTOS task and communicates through queues and an event group. Nothing polls with a
+blocking delay, and no task waits for Wi-Fi, so a network outage never stops the sensors or the alarm.</p>
+<table>
+  <tr><th>Task</th><th>Trigger</th><th>Work</th></tr>
+  <tr><td>sensor</td><td>esp_timer, every 2 s</td><td>Reads the DHT11 (start pulse timed by a one-shot timer, then a short critical section) and the MQ-135 pin. Pushes a sample to the cloud and alert queues.</td></tr>
+  <tr><td>cloud</td><td>cloud queue</td><td>Updates RainMaker parameters when a value changes (0.5 C, 2 %, or air state) and at least every 30 s. Adds Insights metrics every 10 s.</td></tr>
+  <tr><td>alert</td><td>alert queue, 1 s housekeeping</td><td>Applies thresholds with hysteresis, debounces the air alarm, raises push notifications, repeats them every 60 s, and holds them while the cloud is down.</td></tr>
+  <tr><td>control</td><td>control queue</td><td>Handles the alarm switch and drives the LED and buzzer from the air alarm. Writes the Alarm status text.</td></tr>
+  <tr><td>connect</td><td>event group</td><td>Tracks Wi-Fi, MQTT and provisioning state. Runs the recovery watchdog and executes button actions.</td></tr>
+  <tr><td>button</td><td>GPIO interrupt</td><td>Measures press length: short, 3 s, 10 s.</td></tr>
+  <tr><td>ota</td><td>OTA event queue</td><td>Tracks update progress and alerts on failure.</td></tr>
+</table>
+
+<h3>Alarm rules</h3>
+<table>
+  <tr><th>Source</th><th>Raises</th><th>Clears</th><th>Effects</th></tr>
+  <tr><td>Temperature</td><td>at or above threshold (default 35 C)</td><td>below threshold minus 2 C</td><td>App status and push notification</td></tr>
+  <tr><td>Humidity</td><td>at or above threshold (default 80 %)</td><td>below threshold minus 5 %</td><td>App status and push notification</td></tr>
+  <tr><td>Air quality</td><td>MQ-135 digital output trips (after a 30 s warm-up)</td><td>five good readings in a row</td><td>App status, push notification, alarm LED, buzzer if enabled and armed</td></tr>
+</table>
+
+<h2 id="cloud">6. Cloud and app</h2>
+<table>
+  <tr><th>RainMaker device</th><th>Parameters</th></tr>
+  <tr><td>Temperature Sensor</td><td>Temperature (read only, time series), Threshold (slider, 20 to 60 C)</td></tr>
+  <tr><td>Humidity Sensor</td><td>Humidity (read only, time series), Threshold (slider, 30 to 100 %)</td></tr>
+  <tr><td>Air Quality</td><td>Status: GOOD or POOR</td></tr>
+  <tr><td>Alarm</td><td>Power (armed), Status: Normal or the active alarm list</td></tr>
+</table>
+<ul>
+  <li><b>Voice:</b> the Temperature Sensor uses the standard device type, so a linked assistant can read it.</li>
+  <li><b>Insights:</b> metrics <code>temp</code>, <code>hum</code>, <code>air</code>, <code>alarm</code>, plus heap, reboot reasons and logs.</li>
+  <li><b>OTA:</b> two 1.9 MB app slots; the bootloader rolls back to the previous image if the new one never reaches the cloud.</li>
+  <li><b>Provisioning:</b> BLE with sec2. The device prints a QR code at boot; the phone scans it and sends the Wi-Fi credentials.</li>
+</ul>
+
+<h2 id="reliability">7. Reliability</h2>
+<ul>
+  <li><b>Power loss:</b> Wi-Fi credentials and cloud credentials live in NVS. After power returns the node rejoins and reports by itself, in about 15 s in testing.</li>
+  <li><b>Silent cloud failure:</b> if Wi-Fi is configured but the cloud stays unreachable for 30 s, the watchdog drops and re-establishes the Wi-Fi link.</li>
+  <li><b>Button:</b> short press re-handshakes with the access point, a 3 s hold resets Wi-Fi so the device can be re-provisioned, a 10 s hold resets the node completely.</li>
+  <li><b>Offline alerts:</b> notifications raised while offline stay pending and are sent as soon as the cloud returns.</li>
+  <li><b>Bad sensor data:</b> a failed DHT11 read (timeout or checksum) is dropped, never reported as a value.</li>
+</ul>
+
+<h2 id="testing">8. Test plan</h2>
+<table>
+  <tr><th>Test</th><th>Action</th><th>Expected result</th></tr>
+  <tr><td>Provisioning</td><td>Scan the QR code in the app</td><td>Node joins Wi-Fi, four devices appear</td></tr>
+  <tr><td>Live values</td><td>Warm the DHT11 by hand</td><td>Temperature and humidity update in the app</td></tr>
+  <tr><td>Temperature alert</td><td>Set the threshold below the current reading</td><td>Push notification, status text changes</td></tr>
+  <tr><td>Air alarm</td><td>Hold an alcohol swab near the MQ-135</td><td>Status POOR, LED on, notification</td></tr>
+  <tr><td>Air clear</td><td>Remove the source</td><td>LED off after five good readings</td></tr>
+  <tr><td>Power loss</td><td>Unplug and replug USB</td><td>Node returns online without any action</td></tr>
+  <tr><td>Router loss</td><td>Switch the router off, then on</td><td>Node reconnects; watchdog log lines appear</td></tr>
+  <tr><td>Button</td><td>Hold BOOT for 3 s</td><td>Wi-Fi reset, node waits for provisioning</td></tr>
+  <tr><td>Insights</td><td>Open the Insights dashboard</td><td>Metrics and logs visible</td></tr>
+  <tr><td>Voice</td><td>Ask the linked assistant for the temperature</td><td>Current reading spoken</td></tr>
+  <tr><td>OTA</td><td>Upload a new image in the dashboard</td><td>Node updates, reboots, reconnects</td></tr>
+</table>
+<div class="note">All values come from the real sensors: the DHT11 is sampled every 2 s and the MQ-135 digital output is read at
+the same rate. A failed DHT11 read is dropped, so the app keeps its last valid value instead of showing a wrong one.</div>
+
+<h2 id="limits">9. Limitations</h2>
+<ul>
+  <li>The DHT11 is accurate to about 2 C and 5 % RH, and updates at most once per second.</li>
+  <li>The MQ-135 digital output only says whether gas is above the trimmer setting. It gives no concentration.</li>
+  <li>Alexa and Google Assistant need the RainMaker skill linked once in the phone app.</li>
+  <li>The buzzer is disabled by default in firmware and needs its transistor wired before enabling.</li>
+</ul>
+
+</main>
+</body>
+</html>

@@ -1,0 +1,2 @@
+# BLE only: frees the memory classic Bluetooth would use
+CONFIG_BTDM_CTRL_MODE_BLE_ONLY=y
